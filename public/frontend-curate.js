@@ -86,16 +86,22 @@ btn?.addEventListener("click", async () => {
       body: JSON.stringify({ demographic, occasion, budget, country }),
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`HTTP ${response.status}: ${text}`);
-    }
+    const data = await response.json().catch(() => null);
 
-    const data = await response.json();
+    if (!response.ok) {
+      const serverMessage =
+        data && typeof data.error === "string" && data.error.trim()
+          ? data.error.trim()
+          : null;
+
+      throw new Error(
+        serverMessage || `HTTP ${response.status}: Gift search failed.`
+      );
+    }
 
     resultsContent.innerHTML = "";
 
-    if (!data.products || data.products.length === 0) {
+    if (!data?.products || data.products.length === 0) {
       resultsContent.classList.add("results-empty");
       resultsContent.textContent =
         "No solid matches right now — try tweaking the details. — Jude";
@@ -140,8 +146,20 @@ btn?.addEventListener("click", async () => {
   } catch (err) {
     console.error("Gift curation failed:", err);
     resultsContent.classList.add("results-empty");
-    resultsContent.textContent =
-      "Oops — something went wrong on my end. Give it another go in a moment. — Jude";
+
+    const knownMessages = new Set([
+      "Gift search is not configured yet.",
+      "Please wait a moment and try again.",
+      "Missing fields in request.",
+      "One of the fields is too long.",
+      "Request is too large.",
+      "AI returned non-JSON. Try again.",
+      "AI JSON missing products array.",
+    ]);
+
+    resultsContent.textContent = knownMessages.has(err?.message)
+      ? err.message
+      : "Oops — something went wrong on my end. Give it another go in a moment. — Jude";
   } finally {
     finishLoading();
   }
