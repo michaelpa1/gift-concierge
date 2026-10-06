@@ -4,7 +4,7 @@
   "main": "curate.js",
   "type": "module",
   "scripts": {
-    "start": "node curate.js"
+    "start": "node --env-file-if-exists=.env curate.js"
   },
   "dependencies": {
     "openai": "^4.24.0",
